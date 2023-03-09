@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "holiday_packages_enquiries",
+  "info": {
+    "singularName": "holiday-packages-enquiry",
+    "pluralName": "holiday-packages-enquiries",
+    "displayName": "Holiday Packages Enquiries",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "FirstName": {
+      "type": "string"
+    },
+    "LastName": {
+      "type": "string"
+    },
+    "Message": {
+      "type": "richtext"
+    },
+    "DateOfTravel": {
+      "type": "date"
+    },
+    "PhoneNumber": {
+      "type": "biginteger"
+    },
+    "Enquired_Package": {
+      "type": "json"
+    },
+    "Email": {
+      "type": "email"
+    }
+  }
+}

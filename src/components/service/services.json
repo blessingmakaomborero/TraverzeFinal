@@ -1,0 +1,77 @@
+{
+  "collectionName": "components_service_services",
+  "info": {
+    "displayName": "Flights",
+    "icon": "plane",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "Icon": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "info": {
+      "type": "richtext"
+    },
+    "subTitle": {
+      "type": "richtext"
+    },
+    "name": {
+      "type": "string"
+    },
+    "surname": {
+      "type": "string"
+    },
+    "Email": {
+      "type": "email"
+    },
+    "trips": {
+      "type": "enumeration",
+      "enum": [
+        "one-way",
+        "round-trip",
+        "multi-city"
+      ]
+    },
+    "Flyingfrom": {
+      "type": "string"
+    },
+    "flyingTo": {
+      "type": "string"
+    },
+    "DepartureDate": {
+      "type": "date"
+    },
+    "ReturnDate": {
+      "type": "date"
+    },
+    "Adults": {
+      "type": "integer"
+    },
+    "Children": {
+      "type": "integer"
+    },
+    "Class": {
+      "type": "enumeration",
+      "enum": [
+        "Economy",
+        "Business",
+        "Private"
+      ]
+    },
+    "Prices": {
+      "type": "float"
+    }
+  }
+}

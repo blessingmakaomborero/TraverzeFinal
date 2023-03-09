@@ -1,0 +1,33 @@
+{
+  "kind": "collectionType",
+  "collectionName": "general_enquiries",
+  "info": {
+    "singularName": "general-enquiry",
+    "pluralName": "general-enquiries",
+    "displayName": "General Enquiries"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "FirstName": {
+      "type": "string"
+    },
+    "LastName": {
+      "type": "string"
+    },
+    "Name_Of_Organisation": {
+      "type": "string"
+    },
+    "Phone_Number": {
+      "type": "integer"
+    },
+    "Message": {
+      "type": "richtext"
+    },
+    "Email": {
+      "type": "email"
+    }
+  }
+}

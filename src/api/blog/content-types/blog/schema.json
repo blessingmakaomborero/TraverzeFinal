@@ -1,0 +1,67 @@
+{
+  "kind": "collectionType",
+  "collectionName": "blogs",
+  "info": {
+    "singularName": "blog",
+    "pluralName": "blogs",
+    "displayName": "blog",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "unique": true
+    },
+    "paragraph": {
+      "type": "richtext",
+      "required": true
+    },
+    "rating": {
+      "type": "integer"
+    },
+    "Cover": {
+      "type": "media",
+      "multiple": false,
+      "required": true,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "news_update": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::news-update.news-update",
+      "inversedBy": "blog"
+    },
+    "Description": {
+      "type": "richtext"
+    },
+    "Slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true
+    },
+    "subTitle": {
+      "type": "string"
+    },
+    "para1": {
+      "type": "richtext"
+    },
+    "para2": {
+      "type": "richtext"
+    },
+    "para3": {
+      "type": "richtext"
+    },
+    "quote": {
+      "type": "richtext"
+    }
+  }
+}

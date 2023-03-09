@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "other_services_enquiries",
+  "info": {
+    "singularName": "other-services-enquiry",
+    "pluralName": "other-services-enquiries",
+    "displayName": "Other Services Enquiries"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "FirstName": {
+      "type": "string"
+    },
+    "LastName": {
+      "type": "string"
+    },
+    "Message": {
+      "type": "richtext"
+    },
+    "Email": {
+      "type": "email"
+    },
+    "Phone_Number": {
+      "type": "biginteger"
+    },
+    "Service_Enquired": {
+      "type": "json"
+    },
+    "services": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::service.service",
+      "mappedBy": "other_services_enquiry"
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "kind": "collectionType",
+  "collectionName": "enquiries_about_flights",
+  "info": {
+    "singularName": "enquiries-about-flight",
+    "pluralName": "enquiries-about-flights",
+    "displayName": "EnquiriesAboutFlights",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "FirstName": {
+      "type": "string"
+    },
+    "LastName": {
+      "type": "string"
+    },
+    "PhoneNumber": {
+      "type": "biginteger"
+    },
+    "Message": {
+      "type": "richtext"
+    },
+    "Email": {
+      "type": "email"
+    },
+    "Children": {
+      "type": "integer"
+    },
+    "Adults": {
+      "type": "integer"
+    },
+    "FlightClass": {
+      "type": "string"
+    },
+    "SecondFilghtClass": {
+      "type": "string"
+    },
+    "Terms_Conditions": {
+      "type": "boolean"
+    },
+    "TripType": {
+      "type": "string"
+    },
+    "OtherCitiies": {
+      "type": "richtext"
+    },
+    "DepartureAirport": {
+      "type": "string"
+    },
+    "ArrivalAirport": {
+      "type": "string"
+    },
+    "SecondArrivalAirport": {
+      "type": "string"
+    },
+    "SecondDepartureAirport": {
+      "type": "string"
+    },
+    "DepartureDate": {
+      "type": "date"
+    },
+    "ReturnDate": {
+      "type": "date"
+    },
+    "SecondDepartureDate": {
+      "type": "date"
+    }
+  }
+}

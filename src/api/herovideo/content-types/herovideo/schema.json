@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "herovideos",
+  "info": {
+    "singularName": "herovideo",
+    "pluralName": "herovideos",
+    "displayName": "Herovideo",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "hero": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "herovids": {
+      "type": "string"
+    }
+  }
+}

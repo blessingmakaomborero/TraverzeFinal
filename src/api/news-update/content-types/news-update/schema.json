@@ -1,0 +1,25 @@
+{
+  "kind": "collectionType",
+  "collectionName": "news_updates",
+  "info": {
+    "singularName": "news-update",
+    "pluralName": "news-updates",
+    "displayName": "NewsUpdate",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "Newscategory": {
+      "type": "string"
+    },
+    "blog": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::blog.blog",
+      "mappedBy": "news_update"
+    }
+  }
+}
