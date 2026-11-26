@@ -1,0 +1,41 @@
+{
+  "kind": "collectionType",
+  "collectionName": "quotations",
+  "info": {
+    "singularName": "quotation",
+    "pluralName": "quotations",
+    "displayName": "Quotation"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "quoteRef":   { "type": "string", "required": true, "unique": true },
+    "version":    { "type": "integer", "default": 1 },
+    "status": {
+      "type": "enumeration",
+      "enum": ["draft", "sent", "viewed", "approved", "rejected", "expired", "superseded"],
+      "default": "draft"
+    },
+    "title":      { "type": "string" },
+    "currency":   { "type": "string", "default": "USD" },
+    "subtotal":   { "type": "decimal", "default": 0 },
+    "taxes":      { "type": "decimal", "default": 0 },
+    "total":      { "type": "decimal", "required": true },
+    "validUntil": { "type": "date" },
+    "lineItems":  { "type": "json" },
+    "notes":      { "type": "text" },
+    "approvedAt": { "type": "datetime" },
+    "rejectedAt": { "type": "datetime" },
+    "sentAt":     { "type": "datetime" },
+    "enquiry": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tams-enquiry.tams-enquiry",
+      "inversedBy": "quotations"
+    },
+    "customer": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::customer-profile.customer-profile"
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "kind": "collectionType",
+  "collectionName": "tams_enquiries",
+  "info": {
+    "singularName": "tams-enquiry",
+    "pluralName": "tams-enquiries",
+    "displayName": "TAMS Enquiry",
+    "description": "Agency workflow enquiry (enquiry → close)"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "enquiryRef": { "type": "string", "required": true, "unique": true },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "new",
+        "profiling",
+        "requirements",
+        "research",
+        "quotation",
+        "awaiting_approval",
+        "approved",
+        "booking",
+        "in_progress",
+        "travel",
+        "post_travel",
+        "closed",
+        "cancelled"
+      ],
+      "default": "new"
+    },
+    "source":      { "type": "string", "default": "website" },
+    "destination": { "type": "string" },
+    "origin":      { "type": "string", "default": "Harare" },
+    "travelDates": { "type": "json" },
+    "travellers":  { "type": "integer", "default": 1 },
+    "budget":      { "type": "decimal" },
+    "purpose":     { "type": "string" },
+    "summary":     { "type": "text" },
+    "researchNotes": { "type": "text" },
+    "assignedAgent": { "type": "string" },
+    "customer": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::customer-profile.customer-profile",
+      "inversedBy": "enquiries"
+    },
+    "requirements": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::travel-requirement.travel-requirement",
+      "mappedBy": "enquiry"
+    },
+    "quotations": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::quotation.quotation",
+      "mappedBy": "enquiry"
+    },
+    "booking": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::booking.booking"
+    }
+  }
+}

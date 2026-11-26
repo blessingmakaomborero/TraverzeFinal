@@ -1,0 +1,34 @@
+{
+  "kind": "collectionType",
+  "collectionName": "customer_profiles",
+  "info": {
+    "singularName": "customer-profile",
+    "pluralName": "customer-profiles",
+    "displayName": "Customer Profile",
+    "description": "Agency customer profile (distinct from passengers)"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "fullName":     { "type": "string", "required": true },
+    "email":        { "type": "email", "required": true, "unique": true },
+    "phone":        { "type": "string" },
+    "organisation": { "type": "string" },
+    "nationality":  { "type": "string" },
+    "passportNumber": { "type": "string" },
+    "dateOfBirth":  { "type": "date" },
+    "address":      { "type": "text" },
+    "preferences":  { "type": "json" },
+    "notes":        { "type": "text" },
+    "user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "enquiries": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::tams-enquiry.tams-enquiry",
+      "mappedBy": "customer"
+    }
+  }
+}

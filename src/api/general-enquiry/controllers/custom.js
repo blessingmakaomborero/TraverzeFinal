@@ -1,28 +1,59 @@
 'use strict';
 
-/**
- *  enquiry controller
- */
-
 const { createCoreController } = require('@strapi/strapi').factories;
 
-module.exports = createCoreController('api::general-enquiry.general-enquiry',({strapi})=>({
+module.exports = createCoreController(
+  'api::general-enquiry.general-enquiry',
+  ({ strapi }) => ({
+    async create(ctx) {
+      let params;
+      try {
+        params =
+          typeof ctx.request.body === 'string'
+            ? JSON.parse(ctx.request.body)
+            : ctx.request.body || {};
+      } catch {
+        return ctx.badRequest('Invalid JSON body');
+      }
 
-    async creat(ctx){
+      if (!params.Email && !params.email) {
+        return ctx.badRequest('Email is required');
+      }
 
-       let params = JSON.parse(ctx.request.body)
-       console.log(params)
+      const phoneRaw =
+        params.Phone_Number ??
+        params.PhoneNumber ??
+        params.phone ??
+        '';
 
-     const enquiry = await strapi.entityService.create('api::general-enquiry.general-enquiry',{
-            data:{
-                FirstName: params.FirstName,
-                LastName: params.LastName,
-                Email: params.Email,
-                Phone_Number: params.Phone_Number,
-                Message: params.Message,
-                Name_Of_Orgarnisation: params.Name_Of_Orgarnisation,
-            }
-        })
-        return enquiry
-    }
-}));
+      const enquiry = await strapi.entityService.create(
+        'api::general-enquiry.general-enquiry',
+        {
+          data: {
+            FirstName: params.FirstName || params.firstName || '',
+            LastName: params.LastName || params.surname || params.lastName || '',
+            Email: (params.Email || params.email || '').toLowerCase().trim(),
+            Phone_Number: String(phoneRaw || '').trim() || null,
+            Message: [
+              params.Message || params.message || '',
+              params.EnquiryType || params.enquiryType
+                ? `\n\nEnquiry type: ${params.EnquiryType || params.enquiryType}`
+                : '',
+            ]
+              .join('')
+              .trim(),
+            Name_Of_Organisation:
+              params.Name_Of_Organisation ||
+              params.Name_Of_Orgarnisation ||
+              params.NameOfOrganisation ||
+              params.organisation ||
+              '',
+            publishedAt: new Date(),
+          },
+        }
+      );
+
+      return enquiry;
+    },
+  })
+);

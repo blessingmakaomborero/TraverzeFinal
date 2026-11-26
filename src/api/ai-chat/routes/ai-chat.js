@@ -1,0 +1,12 @@
+'use strict';
+
+module.exports = {
+  routes: [
+    {
+      method:  'POST',
+      path:    '/ai-chat',
+      handler: 'ai-chat.respond',
+      config:  { auth: false, policies: [], middlewares: [] },
+    },
+  ],
+};

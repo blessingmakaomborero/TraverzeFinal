@@ -1,0 +1,28 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pre_departure_items",
+  "info": {
+    "singularName": "pre-departure-item",
+    "pluralName": "pre-departure-items",
+    "displayName": "Pre-departure Item"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "title":       { "type": "string", "required": true },
+    "description": { "type": "text" },
+    "dueDate":     { "type": "date" },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "sent", "done", "skipped"],
+      "default": "pending"
+    },
+    "sentAt":      { "type": "datetime" },
+    "completedAt": { "type": "datetime" },
+    "booking": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::booking.booking",
+      "inversedBy": "preDepartureItems"
+    }
+  }
+}
