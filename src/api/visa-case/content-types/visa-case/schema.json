@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "visa_cases",
+  "info": {
+    "singularName": "visa-case",
+    "pluralName": "visa-cases",
+    "displayName": "Visa Case"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "country":     { "type": "string", "required": true },
+    "visaType":    { "type": "string" },
+    "status": {
+      "type": "enumeration",
+      "enum": ["not_required", "docs_pending", "submitted", "in_process", "approved", "rejected", "issued"],
+      "default": "docs_pending"
+    },
+    "applicantName": { "type": "string" },
+    "passportNumber": { "type": "string" },
+    "submittedAt": { "type": "datetime" },
+    "decisionAt":  { "type": "datetime" },
+    "notes":       { "type": "text" },
+    "booking": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::booking.booking",
+      "inversedBy": "visaCases"
+    },
+    "enquiry": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tams-enquiry.tams-enquiry"
+    }
+  }
+}

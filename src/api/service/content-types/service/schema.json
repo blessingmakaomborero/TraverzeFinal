@@ -56,7 +56,8 @@
     },
     "Slug": {
       "type": "uid",
-      "targetField": "title"
+      "targetField": "title",
+      "required": true
     },
     "other_services_enquiry": {
       "type": "relation",

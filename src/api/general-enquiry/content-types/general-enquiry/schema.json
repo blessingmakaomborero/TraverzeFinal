@@ -21,7 +21,7 @@
       "type": "string"
     },
     "Phone_Number": {
-      "type": "integer"
+      "type": "string"
     },
     "Message": {
       "type": "richtext"

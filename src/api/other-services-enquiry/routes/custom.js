@@ -1,17 +1,16 @@
 'use strict';
 
-/**
- * enquiry router.
- */
-
-const { createCoreRouter } = require('@strapi/strapi').factories;
-
-module.exports = createCoreRouter('api::other-services-enquiry.other-services-enquiry');
-// postcss.config.js
 module.exports = {
-     routes:[ {
+  routes: [
+    {
       method: 'POST',
       path: '/other-services-enquiry/other-services-enquiry',
-      handler: 'custom.creat',
-    }]
-  }
+      handler: 'custom.create',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+  ],
+};

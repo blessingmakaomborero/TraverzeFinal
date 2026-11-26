@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "reservations",
+  "info": {
+    "singularName": "reservation",
+    "pluralName": "reservations",
+    "displayName": "Reservation",
+    "description": "Booking line-item (flight/hotel/transfer/insurance/visa/tour)"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "type": {
+      "type": "enumeration",
+      "enum": ["flight", "hotel", "transfer", "insurance", "visa", "tour", "other"],
+      "required": true
+    },
+    "supplier":       { "type": "string" },
+    "supplierRef":    { "type": "string" },
+    "confirmationNo": { "type": "string" },
+    "ticketOrVoucher": { "type": "string" },
+    "status": {
+      "type": "enumeration",
+      "enum": ["requested", "held", "confirmed", "ticketed", "cancelled", "failed"],
+      "default": "requested"
+    },
+    "description":    { "type": "text" },
+    "startDate":      { "type": "date" },
+    "endDate":        { "type": "date" },
+    "cost":           { "type": "decimal", "default": 0 },
+    "sellPrice":      { "type": "decimal", "default": 0 },
+    "currency":       { "type": "string", "default": "USD" },
+    "details":        { "type": "json" },
+    "booking": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::booking.booking",
+      "inversedBy": "reservations"
+    }
+  }
+}

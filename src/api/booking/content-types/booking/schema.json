@@ -1,0 +1,120 @@
+{
+  "kind": "collectionType",
+  "collectionName": "bookings",
+  "info": {
+    "singularName": "booking",
+    "pluralName": "bookings",
+    "displayName": "Booking",
+    "description": "Customer package / service / TAMS bookings"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {},
+  "attributes": {
+    "bookingRef":      { "type": "string", "required": true, "unique": true },
+    "bookingType":     { "type": "enumeration", "enum": ["package", "service", "tams"], "default": "package" },
+    "packageId":       { "type": "string" },
+    "packageTitle":    { "type": "string" },
+    "packageDuration": { "type": "string" },
+    "checkIn":         { "type": "date" },
+    "checkOut":        { "type": "date" },
+    "adults":          { "type": "integer", "default": 1 },
+    "children":        { "type": "integer", "default": 0 },
+    "roomType":        { "type": "string" },
+    "totalCost":       { "type": "decimal", "required": true },
+    "amountPaid":      { "type": "decimal", "default": 0 },
+    "balance":         { "type": "decimal", "default": 0 },
+    "currency":        { "type": "string",  "default": "USD" },
+    "paymentMethod":   { "type": "string" },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "confirmed",
+        "partially_paid",
+        "fully_paid",
+        "checked_in",
+        "cancelled",
+        "completed",
+        "closed"
+      ],
+      "default": "pending"
+    },
+    "pipelineStage": {
+      "type": "enumeration",
+      "enum": [
+        "booked",
+        "reservations",
+        "ticketing",
+        "docs_visa",
+        "pre_departure",
+        "travel",
+        "post_travel",
+        "closed"
+      ],
+      "default": "booked"
+    },
+    "passengers":      { "type": "json" },
+    "ticketingNotes":  { "type": "text" },
+    "ticketingDeadline": { "type": "date" },
+    "changeLog":       { "type": "json" },
+    "financialAudit":  { "type": "json" },
+    "docsReady":       { "type": "boolean", "default": false },
+    "visaReady":       { "type": "boolean", "default": false },
+    "closedAt":        { "type": "datetime" },
+    "closureNotes":    { "type": "text" },
+    "confirmedAt":     { "type": "datetime" },
+    "checkedInAt":     { "type": "datetime" },
+    "notes":           { "type": "text" },
+    "payments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::payment.payment",
+      "mappedBy": "booking"
+    },
+    "reservations": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::reservation.reservation",
+      "mappedBy": "booking"
+    },
+    "visaCases": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::visa-case.visa-case",
+      "mappedBy": "booking"
+    },
+    "preDepartureItems": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pre-departure-item.pre-departure-item",
+      "mappedBy": "booking"
+    },
+    "incidents": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::support-incident.support-incident",
+      "mappedBy": "booking"
+    },
+    "feedbacks": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::feedback.feedback",
+      "mappedBy": "booking"
+    },
+    "customer": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "customerProfile": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::customer-profile.customer-profile"
+    },
+    "quotation": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::quotation.quotation"
+    }
+  }
+}

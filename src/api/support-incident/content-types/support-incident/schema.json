@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "support_incidents",
+  "info": {
+    "singularName": "support-incident",
+    "pluralName": "support-incidents",
+    "displayName": "Support Incident"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "incidentRef": { "type": "string", "required": true, "unique": true },
+    "subject":     { "type": "string", "required": true },
+    "description": { "type": "text" },
+    "status": {
+      "type": "enumeration",
+      "enum": ["open", "in_progress", "resolved", "closed"],
+      "default": "open"
+    },
+    "severity": {
+      "type": "enumeration",
+      "enum": ["low", "medium", "high", "critical"],
+      "default": "medium"
+    },
+    "resolution":  { "type": "text" },
+    "openedAt":    { "type": "datetime" },
+    "resolvedAt":  { "type": "datetime" },
+    "booking": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::booking.booking",
+      "inversedBy": "incidents"
+    },
+    "enquiry": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tams-enquiry.tams-enquiry"
+    }
+  }
+}

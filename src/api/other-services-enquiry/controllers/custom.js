@@ -1,29 +1,58 @@
 'use strict';
 
-/**
- *  enquiry controller
- */
-
 const { createCoreController } = require('@strapi/strapi').factories;
 
-module.exports = createCoreController('api::other-services-enquiry.other-services-enquiry',({strapi})=>({
+function digits(v) {
+  const d = String(v ?? '').replace(/\D/g, '');
+  return d || null;
+}
 
-    async creat(ctx){
+module.exports = createCoreController(
+  'api::other-services-enquiry.other-services-enquiry',
+  ({ strapi }) => ({
+    async create(ctx) {
+      let params;
+      try {
+        params =
+          typeof ctx.request.body === 'string'
+            ? JSON.parse(ctx.request.body)
+            : ctx.request.body || {};
+      } catch {
+        return ctx.badRequest('Invalid JSON body');
+      }
 
-       let params = JSON.parse(ctx.request.body)
-       console.log(params)
+      const email = (params.Email || params.email || '').toLowerCase().trim();
+      if (!email) return ctx.badRequest('Email is required');
 
-     const enquiry = await strapi.entityService.create('api::other-services-enquiry.other-services-enquiry',{
-            data:{
-                name: params.name,
-                surname: params.surname,
-                email: params.email,
-                phone_number: params.phone_number,
-                message: params.message,
-                packageEnq: params.packageEnq,
-                enquiryID: params.enquiryID,
-            }
-        })
-        return enquiry
-    }
-}));
+      const phone =
+        digits(params.Phone_Number ?? params.phone_number ?? params.PhoneNumber ?? params.phone);
+
+      const serviceEnquired =
+        params.Service_Enquired ||
+        params.serviceEnquired ||
+        params.packageEnq ||
+        (params.serviceTitle || params.serviceId
+          ? { title: params.serviceTitle, id: params.serviceId }
+          : null);
+
+      const enquiry = await strapi.entityService.create(
+        'api::other-services-enquiry.other-services-enquiry',
+        {
+          data: {
+            FirstName:
+              params.FirstName || params.firstName || params.name || '',
+            LastName:
+              params.LastName || params.lastName || params.surname || '',
+            Email: email,
+            Phone_Number: phone,
+            Message: params.Message || params.message || '',
+            Service_Enquired: serviceEnquired,
+            publishedAt: new Date(),
+          },
+        }
+      );
+
+      return enquiry;
+    },
+  })
+);

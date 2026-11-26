@@ -1,0 +1,62 @@
+{
+  "kind": "collectionType",
+  "collectionName": "payments",
+  "info": {
+    "singularName": "payment",
+    "pluralName": "payments",
+    "displayName": "Payment",
+    "description": "Customer payments and supplier settlements"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {},
+  "attributes": {
+    "amount":      { "type": "decimal", "required": true },
+    "currency":    { "type": "string",  "default": "USD" },
+    "originalAmount":   { "type": "decimal" },
+    "originalCurrency": { "type": "string" },
+    "exchangeRate":     { "type": "decimal" },
+    "bookingAmount":    { "type": "decimal" },
+    "method":      { "type": "string" },
+    "reference":   { "type": "string" },
+    "notes":       { "type": "text" },
+    "confirmedBy": { "type": "string" },
+    "paymentKind": {
+      "type": "enumeration",
+      "enum": ["customer", "supplier", "refund"],
+      "default": "customer"
+    },
+    "immutable": { "type": "boolean", "default": true },
+    "supplierName": { "type": "string" },
+    "supplierRef":  { "type": "string" },
+    "settlementStatus": {
+      "type": "enumeration",
+      "enum": ["n_a", "pending", "settled", "disputed"],
+      "default": "n_a"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "confirmed", "rejected"],
+      "default": "pending"
+    },
+    "gatewayProvider": {
+      "type": "enumeration",
+      "enum": ["none", "stripe", "mock", "paynow"],
+      "default": "none"
+    },
+    "gatewaySessionId": { "type": "string" },
+    "gatewayPaymentIntentId": { "type": "string" },
+    "gatewayEventId": { "type": "string" },
+    "receiptUrl": { "type": "string" },
+    "booking": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::booking.booking",
+      "inversedBy": "payments"
+    },
+    "customer": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}

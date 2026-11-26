@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "travel_requirements",
+  "info": {
+    "singularName": "travel-requirement",
+    "pluralName": "travel-requirements",
+    "displayName": "Travel Requirement"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "category": {
+      "type": "enumeration",
+      "enum": ["flight", "hotel", "transfer", "insurance", "visa", "tour", "other"],
+      "default": "flight"
+    },
+    "description": { "type": "text", "required": true },
+    "priority": {
+      "type": "enumeration",
+      "enum": ["must", "preferred", "optional"],
+      "default": "must"
+    },
+    "details": { "type": "json" },
+    "enquiry": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::tams-enquiry.tams-enquiry",
+      "inversedBy": "requirements"
+    }
+  }
+}

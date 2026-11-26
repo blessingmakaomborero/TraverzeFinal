@@ -5,13 +5,33 @@
     "singularName": "enquiries-about-flight",
     "pluralName": "enquiries-about-flights",
     "displayName": "EnquiriesAboutFlights",
-    "description": ""
+    "description": "Option A manual flight enquiry → quote → ticket pipeline"
   },
   "options": {
     "draftAndPublish": true
   },
   "pluginOptions": {},
   "attributes": {
+    "enquiryRef": {
+      "type": "string",
+      "unique": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "New",
+        "Under Review",
+        "Searching",
+        "Quotation Sent",
+        "Awaiting Response",
+        "Accepted",
+        "Awaiting Payment",
+        "Ticket Issued",
+        "Cancelled",
+        "Closed"
+      ],
+      "default": "New"
+    },
     "FirstName": {
       "type": "string"
     },
@@ -19,7 +39,7 @@
       "type": "string"
     },
     "PhoneNumber": {
-      "type": "biginteger"
+      "type": "string"
     },
     "Message": {
       "type": "richtext"
@@ -33,6 +53,9 @@
     "Adults": {
       "type": "integer"
     },
+    "Infants": {
+      "type": "integer"
+    },
     "FlightClass": {
       "type": "string"
     },
@@ -43,7 +66,8 @@
       "type": "boolean"
     },
     "TripType": {
-      "type": "string"
+      "type": "enumeration",
+      "enum": ["one-way", "round-trip", "multi-city", "One Way", "Two Way", "Multicity"]
     },
     "OtherCitiies": {
       "type": "richtext"
@@ -68,6 +92,40 @@
     },
     "SecondDepartureDate": {
       "type": "date"
+    },
+    "assignedAgent": {
+      "type": "string"
+    },
+    "searchNotes": {
+      "type": "text"
+    },
+    "agentNotes": {
+      "type": "text"
+    },
+    "quotationAmount": {
+      "type": "decimal"
+    },
+    "quotationCurrency": {
+      "type": "string",
+      "default": "USD"
+    },
+    "quotationDetails": {
+      "type": "text"
+    },
+    "quotationSentAt": {
+      "type": "datetime"
+    },
+    "acknowledgementSentAt": {
+      "type": "datetime"
+    },
+    "tamsEnquiryRef": {
+      "type": "string"
+    },
+    "changeLog": {
+      "type": "json"
+    },
+    "contactPreference": {
+      "type": "string"
     }
   }
 }

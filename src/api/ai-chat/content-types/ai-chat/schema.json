@@ -1,0 +1,15 @@
+{
+  "kind": "collectionType",
+  "collectionName": "ai_chats",
+  "info": {
+    "singularName": "ai-chat",
+    "pluralName": "ai-chats",
+    "displayName": "AI Chat"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {},
+  "attributes": {
+    "message": { "type": "string" },
+    "reply":   { "type": "text"   }
+  }
+}
