@@ -31,6 +31,8 @@ async function grantPermissions(strapi) {
       { action: 'api::tams.tams.createEnquiry' },
       { action: 'api::payment.payment.webhook' },
       { action: 'api::payment.payment.dischubCallback' },
+      { action: 'api::destination.destination.find' },
+      { action: 'api::destination.destination.findOne' },
     ];
 
     const authGrants = [

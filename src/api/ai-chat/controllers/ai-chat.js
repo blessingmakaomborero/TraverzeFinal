@@ -1,306 +1,492 @@
 'use strict';
 
 /* ═══════════════════════════════════════════════════════════════
-   TRAVERZE TRAVEL — AI CHAT ENGINE
-   Self-hosted travel assistant. No external API keys needed.
-   Knows: packages, flights, bookings, FAQs, destinations.
+   TARA — Sisonke Travels assistant
+   Self-hosted. Reads live packages, flights, and the signed-in
+   customer's own bookings. No external AI key.
 ═══════════════════════════════════════════════════════════════ */
 
 const { createCoreController } = require('@strapi/strapi').factories;
 
-/* ── normalise text for matching ── */
-const norm = s => (s || '').toLowerCase().trim();
-const has  = (text, ...words) => words.some(w => norm(text).includes(w));
+const BRAND = {
+  name: 'Sisonke Travels',
+  email: 'enquiries@sisonketravels.co.zw',
+  phone: '+263 719 239 230',
+  office: '+263 4 799 792',
+  whatsapp: 'https://wa.me/263719239230',
+  address: '1 Kenny Close, Avondale, Harare',
+  hours: 'Mon–Fri 08:00–17:00 · Sat 09:00–13:00',
+};
 
-/* ── intent detection ── */
-function detectIntent(message) {
-  const m = norm(message);
+const norm = (s) => (s || '')
+  .toLowerCase()
+  .replace(/\*/g, '')
+  .replace(/https?:\/\/\S+/g, ' ')
+  .replace(/[^a-z0-9+./\-\s]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
 
-  if (has(m, 'hello', 'hi ', 'hey', 'greet', 'good morning', 'good afternoon', 'good evening', 'howzit', 'sup'))
-    return 'greeting';
-  if (has(m, 'bye', 'goodbye', 'see you', 'farewell', 'thanks', 'thank you', 'thx'))
-    return 'farewell';
-  if (has(m, 'flight', 'fly', 'plane', 'airline', 'departure', 'arrival', 'airport', 'ticket'))
-    return 'flights';
-  if (has(m, 'package', 'holiday', 'tour', 'trip', 'vacation', 'getaway', 'deal', 'offer'))
-    return 'packages';
-  if (has(m, 'zanzibar', 'maldives', 'dubai', 'kenya', 'mauritius', 'victoria falls', 'cape town', 'bali', 'mozambique'))
-    return 'destination';
-  if (has(m, 'price', 'cost', 'how much', 'fee', 'rate', 'expensive', 'cheap', 'budget', 'afford'))
-    return 'pricing';
-  if (has(m, 'book', 'reserve', 'booking', 'reservation', 'confirm', 'purchase'))
-    return 'booking';
-  if (has(m, 'pay', 'payment', 'deposit', 'ecocash', 'bank', 'transfer', 'card', 'cash', 'instalment'))
-    return 'payment';
-  if (has(m, 'cancel', 'refund', 'change', 'reschedule', 'postpone', 'amend'))
-    return 'cancellation';
-  if (has(m, 'visa', 'passport', 'document', 'requirement', 'travel document'))
-    return 'visa';
-  if (has(m, 'insurance', 'cover', 'medical', 'emergency', 'protect'))
-    return 'insurance';
-  if (has(m, 'hotel', 'accommodation', 'stay', 'lodge', 'resort', 'room'))
-    return 'accommodation';
-  if (has(m, 'contact', 'phone', 'email', 'address', 'office', 'whatsapp', 'call', 'reach'))
-    return 'contact';
-  if (has(m, 'dashboard', 'account', 'login', 'sign in', 'password', 'profile'))
-    return 'account';
-  if (has(m, 'honeymoon', 'romantic', 'couple', 'anniversary', 'wedding'))
-    return 'honeymoon';
-  if (has(m, 'group', 'family', 'kids', 'children', 'corporate', 'team'))
-    return 'group';
-  if (has(m, 'weekend', 'short break', 'quick trip', '2 day', '3 day'))
-    return 'weekend';
-  if (has(m, 'safari', 'game drive', 'wildlife', 'animal', 'big five'))
-    return 'safari';
-  if (has(m, 'beach', 'ocean', 'sea', 'snorkel', 'dive', 'swim', 'coast', 'island'))
-    return 'beach';
-  if (has(m, 'when', 'season', 'best time', 'weather', 'climate', 'rainy', 'dry'))
-    return 'besttime';
-  if (has(m, 'human', 'agent', 'person', 'talk to', 'speak to', 'consultant', 'staff', 'real'))
-    return 'human';
+const STOP = new Set([
+  'the', 'and', 'for', 'from', 'with', 'what', 'how', 'much', 'can', 'you',
+  'please', 'show', 'me', 'our', 'your', 'want', 'need', 'about', 'this',
+  'that', 'have', 'any', 'get', 'to', 'of', 'in', 'on', 'is', 'it', 'my',
+  'do', 'we', 'a', 'an', 'i', 'trip', 'trips', 'package', 'packages',
+  'flight', 'flights', 'price', 'prices', 'cost', 'book', 'booking',
+]);
 
-  return 'unknown';
+const INTENTS = [
+  { id: 'greeting', words: ['hello', 'hi', 'hey', 'hie', 'howzit', 'makadii', 'mhoro', 'good morning', 'good afternoon', 'good evening'] },
+  { id: 'farewell', words: ['bye', 'goodbye', 'see you', 'thanks', 'thank you', 'cheers'] },
+  { id: 'mytrips', words: ['my booking', 'my bookings', 'my trip', 'my trips', 'my balance', 'balance due', 'booking ref', 'reference', 'where is my', 'payment status', 'how much do i owe'] },
+  { id: 'payment', words: ['pay', 'payment', 'ecocash', 'innbucks', 'inn bucks', 'omari', "o'mari", 'zimswitch', 'dischub', 'bank transfer', 'cash', 'deposit', 'checkout'] },
+  { id: 'flights', words: ['flight', 'flights', 'fly', 'airline', 'airport', 'ticket', 'fare'] },
+  { id: 'packages', words: ['package', 'packages', 'holiday', 'tour', 'getaway', 'deal', 'offer', 'itinerary'] },
+  { id: 'destination', words: ['zanzibar', 'maldives', 'dubai', 'kenya', 'mauritius', 'victoria falls', 'cape town', 'bali', 'mozambique', 'hwange', 'johannesburg', 'joburg', 'botswana', 'chobe', 'livingstone', 'kruger', 'masai', 'mara', 'harare'] },
+  { id: 'pricing', words: ['price', 'prices', 'cost', 'how much', 'fee', 'rate', 'expensive', 'cheap', 'budget', 'afford', 'quote'] },
+  { id: 'booking', words: ['book', 'reserve', 'booking', 'reservation', 'how to book'] },
+  { id: 'cancellation', words: ['cancel', 'refund', 'reschedule', 'postpone', 'amend', 'change my'] },
+  { id: 'visa', words: ['visa', 'passport', 'travel document'] },
+  { id: 'insurance', words: ['insurance', 'cover', 'medical cover'] },
+  { id: 'accommodation', words: ['hotel', 'accommodation', 'lodge', 'resort', 'room'] },
+  { id: 'contact', words: ['contact', 'phone', 'email', 'address', 'office', 'whatsapp', 'call', 'where are you'] },
+  { id: 'account', words: ['dashboard', 'account', 'login', 'log in', 'sign in', 'password', 'profile'] },
+  { id: 'honeymoon', words: ['honeymoon', 'romantic', 'anniversary', 'wedding'] },
+  { id: 'group', words: ['group', 'family', 'kids', 'children', 'corporate', 'school tour'] },
+  { id: 'weekend', words: ['weekend', 'short break', 'quick trip'] },
+  { id: 'safari', words: ['safari', 'game drive', 'wildlife', 'big five'] },
+  { id: 'beach', words: ['beach', 'snorkel', 'island', 'coast'] },
+  { id: 'besttime', words: ['best time', 'season', 'weather', 'climate'] },
+  { id: 'human', words: ['talk to an agent', 'live agent', 'live consultant', 'real person', 'human', 'speak to someone', 'consultant'] },
+];
+
+const DEST_INFO = {
+  zanzibar: { name: 'Zanzibar', emoji: '🏝️', desc: 'White sandy beaches, Stone Town, spice farms and dhow cruises.', tip: 'Best time: Jun–Oct (dry season).' },
+  maldives: { name: 'Maldives', emoji: '🌊', desc: 'Overwater villas, clear lagoons, snorkelling and diving.', tip: 'Best time: Nov–Apr.' },
+  dubai: { name: 'Dubai', emoji: '🏙️', desc: 'Desert safaris, Burj Khalifa, souks and a big food scene.', tip: 'Best time: Oct–Apr.' },
+  kenya: { name: 'Kenya', emoji: '🦁', desc: 'Masai Mara game drives and the Great Migration.', tip: 'Best time: Jul–Oct.' },
+  mauritius: { name: 'Mauritius', emoji: '🌺', desc: 'Lagoon beaches, Le Morne and water sports.', tip: 'Best time: May–Dec.' },
+  'victoria falls': { name: 'Victoria Falls', emoji: '💦', desc: 'The falls, Zambezi cruises, and the Victoria Falls activities.', tip: 'Best time for full flow: Feb–May.' },
+  'cape town': { name: 'Cape Town', emoji: '🏔️', desc: 'Table Mountain, the Winelands and the peninsula.', tip: 'Best time: Oct–Apr.' },
+  bali: { name: 'Bali', emoji: '🌴', desc: 'Rice terraces, temples and surf beaches.', tip: 'Best time: Apr–Oct.' },
+  mozambique: { name: 'Mozambique', emoji: '🌊', desc: 'A short beach hop from Harare, with lodges and the Indian Ocean.', tip: 'Best time: Apr–Nov.' },
+  hwange: { name: 'Hwange', emoji: '🐆', desc: 'Zimbabwe’s flagship park — elephants, big game and quiet camps.', tip: 'Best time: Jul–Oct.' },
+  johannesburg: { name: 'Johannesburg', emoji: '🏙️', desc: 'A city break with shopping, food and easy onward connections.', tip: 'Year-round.' },
+  botswana: { name: 'Botswana', emoji: '🐘', desc: 'Chobe and the Okavango — elephants, water and classic safari.', tip: 'Best time: May–Oct.' },
+  livingstone: { name: 'Livingstone', emoji: '💦', desc: 'The Zambian side of Victoria Falls, with river activities.', tip: 'Best time for full flow: Feb–May.' },
+};
+
+let catalogCache = { at: 0, packages: [], flights: [] };
+
+function includesPhrase(text, phrase) {
+  if (phrase.includes(' ')) return text.includes(phrase);
+  return new RegExp(`(?:^|\\s)${phrase}(?:\\s|$)`).test(text);
 }
 
-/* ── fetch live data from Strapi ── */
-async function getLivePackages(strapi, limit = 3) {
+function scoreMessage(message) {
+  const scores = {};
+  INTENTS.forEach((intent) => {
+    let score = 0;
+    intent.words.forEach((word) => {
+      if (includesPhrase(message, word)) score += word.includes(' ') ? 4 : 2;
+    });
+    if (score) scores[intent.id] = score;
+  });
+  return Object.entries(scores).sort((a, b) => b[1] - a[1]).map(([id]) => id);
+}
+
+function isFollowUp(message) {
+  return /^(how much|what s the price|price|prices|cost|yes|yeah|yep|ok|okay|sure|that one|the first|first one|cheapest|more|tell me more|book it|book this|and|flights|packages)\??$/.test(message);
+}
+
+function priorUserText(history) {
+  return (history || [])
+    .filter((item) => item && item.role === 'user' && typeof item.text === 'string')
+    .slice(-4)
+    .map((item) => norm(item.text))
+    .join(' ');
+}
+
+function pickIntent(message, history) {
+  if (/\btrv-[a-z0-9]+\b/.test(message)) return { intent: 'mytrips', search: message };
+  const ranked = scoreMessage(message);
+  if (isFollowUp(message)) {
+    const prior = priorUserText(history);
+    const priorRanked = scoreMessage(prior);
+    let intent = ranked[0] || priorRanked[0] || 'unknown';
+    if (/how much|price|cost|cheap/.test(message)) intent = 'pricing';
+    if (/^book/.test(message)) intent = 'booking';
+    return { intent, search: `${prior} ${message}`.trim() };
+  }
+  const words = message.split(' ').filter(Boolean);
+  if (ranked[0] === 'greeting' && words.length > 3 && ranked[1]) {
+    return { intent: ranked[1], search: message };
+  }
+  if (ranked.includes('mytrips') && (message.includes('my ') || message.includes('owe') || message.includes('balance'))) {
+    return { intent: 'mytrips', search: message };
+  }
+  if (ranked.includes('payment') && ranked.includes('booking')) {
+    return { intent: 'payment', search: message };
+  }
+  return { intent: ranked[0] || 'unknown', search: message };
+}
+
+function money(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return 'on request';
+  return `$${Math.round(amount).toLocaleString('en-US')}`;
+}
+
+function cityOf(pkg) {
+  return pkg?.location?.City || '';
+}
+
+function cleanName(name) {
+  const value = String(name || '').trim();
+  if (!/^[A-Za-z][A-Za-z '-]{1,30}$/.test(value)) return '';
+  return value.split(' ')[0];
+}
+
+async function loadCatalog(strapi) {
+  if (Date.now() - catalogCache.at < 60 * 1000) return catalogCache;
+  let packages = [];
+  let flights = [];
   try {
-    const pkgs = await strapi.entityService.findMany('api::package.package', {
-      fields: ['title', 'cost', 'duration'],
+    packages = await strapi.entityService.findMany('api::package.package', {
+      fields: ['title', 'cost', 'duration', 'meals', 'Slug'],
       populate: { location: { fields: ['City'] } },
-      sort:  ['cost:asc'],
-      pagination: { pageSize: limit },
-    });
-    return pkgs || [];
-  } catch { return []; }
-}
-
-async function getLiveFlights(strapi, limit = 3) {
+      sort: ['cost:asc'],
+      publicationState: 'live',
+      pagination: { pageSize: 40 },
+    }) || [];
+  } catch (err) {
+    strapi.log.warn(`Tara packages: ${err.message}`);
+  }
   try {
-    const flights = await strapi.entityService.findMany('api::flight.flight', {
+    flights = await strapi.entityService.findMany('api::flight.flight', {
       fields: ['cityA', 'cityB', 'price', 'planename'],
-      sort:  ['price:asc'],
-      pagination: { pageSize: limit },
-    });
-    return flights || [];
-  } catch { return []; }
+      sort: ['price:asc'],
+      publicationState: 'live',
+      pagination: { pageSize: 40 },
+    }) || [];
+  } catch (err) {
+    strapi.log.warn(`Tara flights: ${err.message}`);
+  }
+  catalogCache = {
+    at: Date.now(),
+    packages: Array.isArray(packages) ? packages : [],
+    flights: Array.isArray(flights) ? flights : [],
+  };
+  return catalogCache;
 }
 
-/* ── response builder ── */
-async function buildResponse(intent, message, strapi) {
-  const m = norm(message);
+function searchPackages(packages, query) {
+  const words = norm(query).split(' ').filter((word) => word.length > 2 && !STOP.has(word));
+  if (!words.length) return [];
+  return packages
+    .map((pkg) => {
+      const hay = norm(`${pkg.title} ${cityOf(pkg)} ${pkg.duration} ${pkg.meals}`);
+      const score = words.reduce((sum, word) => sum + (hay.includes(word) ? 1 : 0), 0);
+      return { pkg, score };
+    })
+    .filter((row) => row.score > 0)
+    .sort((a, b) => b.score - a.score || Number(a.pkg.cost) - Number(b.pkg.cost))
+    .map((row) => row.pkg);
+}
+
+function searchFlights(flights, query) {
+  const words = norm(query).split(' ').filter((word) => word.length > 2 && !STOP.has(word));
+  if (!words.length) return flights.slice(0, 4);
+  const matched = flights.filter((flight) => {
+    const hay = norm(`${flight.cityA} ${flight.cityB} ${flight.planename}`);
+    return words.some((word) => hay.includes(word));
+  });
+  return (matched.length ? matched : flights).slice(0, 4);
+}
+
+function packageLines(list) {
+  if (!list.length) return '';
+  return `\n\n${list.slice(0, 4).map((pkg) => {
+    const city = cityOf(pkg);
+    const link = pkg.Slug ? ` · [View](/hotels/${pkg.Slug})` : '';
+    return `🌍 **${pkg.title}**${city ? ` · ${city}` : ''} — ${pkg.duration || 'dates on request'} from **${money(pkg.cost)} USD** pp${link}`;
+  }).join('\n')}`;
+}
+
+function flightLines(list) {
+  if (!list.length) return '';
+  return `\n\n${list.slice(0, 4).map((flight) => (
+    `✈️ **${flight.cityA || 'Harare'} → ${flight.cityB || 'destination'}**${flight.planename ? ` (${flight.planename})` : ''} — from **${money(flight.price)} USD**`
+  )).join('\n')}`;
+}
+
+function spotDestination(text) {
+  const found = Object.keys(DEST_INFO).find((key) => text.includes(key));
+  return found ? DEST_INFO[found] : null;
+}
+
+function statusLabel(status) {
+  const labels = {
+    pending: 'awaiting confirmation',
+    confirmed: 'confirmed',
+    partially_paid: 'partly paid',
+    fully_paid: 'paid in full',
+    checked_in: 'checked in',
+    cancelled: 'cancelled',
+    completed: 'completed',
+    closed: 'closed',
+  };
+  return labels[status] || status || 'on file';
+}
+
+async function signedInUser(strapi, ctx) {
+  const header = ctx.request.header.authorization || '';
+  if (!header.startsWith('Bearer ')) return null;
+  try {
+    const payload = await strapi.plugin('users-permissions').service('jwt').verify(header.slice(7));
+    if (!payload?.id) return null;
+    return await strapi.db.query('plugin::users-permissions.user').findOne({ where: { id: payload.id } });
+  } catch {
+    return null;
+  }
+}
+
+async function ownBookings(strapi, userId) {
+  return strapi.entityService.findMany('api::booking.booking', {
+    filters: { customer: { id: userId } },
+    fields: ['bookingRef', 'packageTitle', 'status', 'totalCost', 'amountPaid', 'balance', 'currency', 'checkIn', 'checkOut'],
+    sort: ['createdAt:desc'],
+    pagination: { pageSize: 5 },
+  }) || [];
+}
+
+function bookingLines(bookings) {
+  return bookings.slice(0, 4).map((booking) => {
+    const when = booking.checkIn ? ` · ${booking.checkIn}` : '';
+    const due = Number(booking.balance) > 0
+      ? ` · balance **${money(booking.balance)}**`
+      : ' · nothing due';
+    return `• **${booking.bookingRef}** — ${booking.packageTitle || 'Booking'}${when} · ${statusLabel(booking.status)}${due} · [Open](/booking/confirmed/${booking.bookingRef})`;
+  }).join('\n');
+}
+
+async function buildResponse({ intent, search }, message, strapi, user, name) {
+  const catalog = await loadCatalog(strapi);
+  const packages = searchPackages(catalog.packages, search);
+  const shownPackages = packages.length ? packages : catalog.packages.slice(0, 3);
+  const flights = searchFlights(catalog.flights, search);
+  const place = spotDestination(search);
 
   switch (intent) {
-
     case 'greeting':
       return {
-        text: "Hello! 👋 Welcome to **Sisonke Travels** — your luxury travel partner for over 20 years.\n\nI'm Tara, your AI travel assistant. I can help you with:\n\n✈️ Flight estimates\n🏖️ Holiday packages\n💳 Booking & payments\n🗺️ Destination advice\n\nWhat would you like to explore today?",
-        chips: ['Show me packages', 'Flight prices', 'How to book', 'Contact an agent'],
+        text: `Hello${name ? ` ${name}` : ''}! I'm **Tara** at **${BRAND.name}**.\n\nI can look up holiday packages and flight estimates on the site${user ? ', and I can see the trips on your account' : ''}.\n\nWhat are you planning?`,
+        chips: user
+          ? ['My bookings', 'Show me packages', 'Flight prices', 'How do I pay?']
+          : ['Show me packages', 'Flight prices', 'How do I pay?', 'Talk to an agent'],
       };
 
     case 'farewell':
       return {
-        text: "It was a pleasure chatting with you! ✈️\n\nWhenever you're ready to start planning your next adventure, we're here 24/7.\n\nSafe travels! 🌍",
-        chips: ['Browse packages', 'Contact us'],
+        text: 'Glad I could help. When you are ready to travel, the packages and your dashboard are both open.\n\nSafe travels.',
+        chips: ['Show me packages', 'My bookings'],
       };
 
-    case 'flights': {
-      const flights = await getLiveFlights(strapi, 4);
-      let flightList = '';
-      if (flights.length > 0) {
-        flightList = '\n\nHere are some of our current estimates:\n\n' +
-          flights.map(f => `✈️ **${f.cityA} → ${f.cityB}** (${f.planename}) — from **$${f.price} USD**`).join('\n');
+    case 'mytrips': {
+      if (!user) {
+        return {
+          text: `I can check a booking once you are signed in.\n\n[Sign in](/account) with the email you used to book, then ask me again. Or open [My trips](/dashboard).`,
+          chips: ['How to book', 'How do I pay?', 'Talk to an agent'],
+        };
       }
+      const ref = (message.match(/\btrv-[a-z0-9]+\b/i) || [])[0];
+      let bookings = await ownBookings(strapi, user.id);
+      if (ref) {
+        bookings = bookings.filter((booking) => booking.bookingRef?.toLowerCase() === ref.toLowerCase());
+        if (!bookings.length) {
+          return {
+            text: `I can't see **${ref.toUpperCase()}** on this account. Check the reference, or open [My trips](/dashboard).`,
+            chips: ['My bookings', 'Talk to an agent'],
+          };
+        }
+      }
+      if (!bookings.length) {
+        return {
+          text: `There are no bookings on this account yet.\n\nBrowse [holiday packages](/Holiday_Packages) and book from the package page. I'll be able to see it here afterwards.`,
+          chips: ['Show me packages', 'How to book'],
+        };
+      }
+      const due = bookings.reduce((sum, booking) => sum + (Number(booking.balance) || 0), 0);
       return {
-        text: `We offer flights from Harare (HRE) to destinations across Africa and the world.${flightList}\n\n💡 These are weekly estimates. For today's best available price — which is almost always lower — speak to a consultant.`,
-        chips: ['Get a flight quote', 'View all flights', 'Book a flight', 'Contact agent'],
+        text: `Here is what I can see on your account:\n\n${bookingLines(bookings)}\n\n${due > 0 ? `Total still due: **${money(due)} USD**. Pay from [My trips](/dashboard) with EcoCash, InnBucks, O'mari, Zimswitch or card checkout.` : 'Everything I can see is settled.'}`,
+        chips: due > 0 ? ['How do I pay?', 'Show me packages', 'Talk to an agent'] : ['Show me packages', 'Flight prices'],
       };
     }
 
-    case 'packages': {
-      const pkgs = await getLivePackages(strapi, 4);
-      let pkgList = '';
-      if (pkgs.length > 0) {
-        pkgList = '\n\nHere are a few of our popular packages:\n\n' +
-          pkgs.map(p => `🌍 **${p.title}** — ${p.duration} from **$${p.cost} USD pp**`).join('\n');
-      }
+    case 'flights':
       return {
-        text: `We curate world-class holiday packages tailored to every traveller.${pkgList}\n\n📌 All packages include flights, accommodation, and key activities. Prices are per person.`,
-        chips: ['Beach packages', 'Safari packages', 'Honeymoon packages', 'View all packages'],
+        text: `These are guide fares from the site, not a live airline seat.${flightLines(flights)}\n\nFor today's fare, send an enquiry and a consultant will price it. [Flight estimates](/flights)`,
+        chips: ['Show me packages', 'How to book', 'Get a quote', 'Talk to an agent'],
       };
-    }
+
+    case 'packages':
+      return {
+        text: `Here are packages that match what you asked.${packageLines(shownPackages)}\n\nPrices are per person. Open one to see what is included, or browse [all packages](/Holiday_Packages).`,
+        chips: ['Beach packages', 'Safari packages', 'How much?', 'How to book'],
+      };
 
     case 'destination': {
-      const dest = has(m, 'zanzibar') ? 'Zanzibar'
-        : has(m, 'maldives') ? 'Maldives'
-        : has(m, 'dubai') ? 'Dubai'
-        : has(m, 'kenya') ? 'Kenya'
-        : has(m, 'mauritius') ? 'Mauritius'
-        : has(m, 'victoria falls') ? 'Victoria Falls'
-        : has(m, 'cape town') ? 'Cape Town'
-        : has(m, 'bali') ? 'Bali'
-        : 'this destination';
-
-      const info = {
-        'Zanzibar': { emoji:'🏝️', desc:'White sandy beaches, UNESCO Stone Town, spice farms, dhow cruises.', price:'from $1,850 pp', tip:'Best time: Jun–Oct (dry season)' },
-        'Maldives': { emoji:'🌊', desc:'Overwater bungalows, crystal lagoons, world-class snorkelling and diving.', price:'from $4,500 pp', tip:'Best time: Nov–Apr (dry season)' },
-        'Dubai':    { emoji:'🏙️', desc:'Desert safaris, Burj Khalifa, Gold Souk, incredible food scene.', price:'from $1,650 pp', tip:'Best time: Oct–Apr (cooler weather)' },
-        'Kenya':    { emoji:'🦁', desc:'Masai Mara game drives, Great Migration, hot air balloon safaris.', price:'from $2,400 pp', tip:'Best time: Jul–Oct (Great Migration)' },
-        'Mauritius':{ emoji:'🌺', desc:'Lagoon beaches, le Morne, water sports, vibrant Creole culture.', price:'from $3,200 pp', tip:'Best time: May–Dec (dry season)' },
-        'Victoria Falls': { emoji:'💦', desc:'One of the 7 Natural Wonders — bungee jumping, Zambezi cruises, game drives.', price:'from $1,200 pp', tip:'Best time: Feb–May (full flow)' },
-        'Cape Town':{ emoji:'🏔️', desc:'Table Mountain, Winelands, Boulders Beach penguins, world-class cuisine.', price:'from $1,400 pp', tip:'Best time: Oct–Apr (summer)' },
-        'Bali':     { emoji:'🌴', desc:'Rice terraces, Hindu temples, surf beaches, vibrant nightlife.', price:'from $2,100 pp', tip:'Best time: Apr–Oct (dry season)' },
-      };
-
-      const d = info[dest] || { emoji:'🌍', desc:'A beautiful destination with amazing experiences.', price:'contact us for pricing', tip:'' };
-
+      const info = place || { name: 'That destination', emoji: '🌍', desc: 'We arrange it from Harare with flights, stay and the main activities.', tip: '' };
+      const matched = packages.length ? packages : [];
       return {
-        text: `${d.emoji} **${dest}** is one of our most popular destinations!\n\n${d.desc}\n\n💰 Packages **${d.price}** (flights + accommodation included)\n📅 ${d.tip}\n\nWould you like to see our ${dest} packages or get a personalised quote?`,
-        chips: [`${dest} packages`, 'Get a quote', 'Best time to travel', 'Other destinations'],
+        text: `${info.emoji} **${info.name}**\n\n${info.desc}${info.tip ? `\n📅 ${info.tip}` : ''}${packageLines(matched)}\n\n${matched.length ? 'Those prices are the live packages on the site.' : 'Tell me your dates and budget and a consultant will price it.'}`,
+        chips: ['How much?', 'How to book', 'Best time to travel', 'Other destinations'],
       };
     }
 
     case 'pricing': {
-      const pkgs = await getLivePackages(strapi, 3);
-      const cheapest = pkgs.length > 0 ? pkgs[0] : null;
+      const list = packages.length ? packages.slice(0, 3) : catalog.packages.slice(0, 3);
+      const lead = place
+        ? `${place.emoji} For **${place.name}**, this is what is on the site right now.`
+        : 'Package prices are per person and come from the live list.';
       return {
-        text: `Our packages are priced **per person** and include flights, accommodation, and key activities — no hidden fees.\n\n💰 **Pricing range:**\n• Weekend Breaks — from **$500 pp**\n• Holiday Packages — from **$1,200 pp**\n• Luxury / Maldives — from **$3,200 pp**${cheapest ? `\n\n🔥 Current best deal: **${cheapest.title}** — $${cheapest.cost} pp` : ''}\n\n✅ We also offer **30% deposit** to secure your booking, balance due 14 days before travel.`,
-        chips: ['See all prices', 'Pay 30% deposit', 'Group discounts', 'Get a custom quote'],
+        text: `${lead}${packageLines(list)}\n\nYou can pay the full balance, or part of it, from [My trips](/dashboard).`,
+        chips: ['Show me packages', 'How do I pay?', 'Flight prices', 'Talk to an agent'],
       };
     }
 
     case 'booking':
       return {
-        text: `Booking with Sisonke Travels is simple and secure:\n\n1️⃣ Browse packages at **/Holiday_Packages**\n2️⃣ Click **"Book This Package"** on any package\n3️⃣ Fill in your traveller details & choose dates\n4️⃣ Select your payment method\n5️⃣ Confirm — your booking reference is generated instantly\n\n🔐 A customer account is created automatically so you can track your booking at **/dashboard**.\n\n⏱️ A consultant confirms within **60 minutes**.`,
-        chips: ['Browse packages', 'Go to dashboard', 'Payment options', 'Talk to consultant'],
+        text: `Booking on the site:\n\n1. Open a package on [Holiday packages](/Holiday_Packages)\n2. Choose dates and travellers\n3. Confirm — you get a **TRV** reference straight away\n4. Pay from [My trips](/dashboard)\n\nA consultant confirms the booking. Ask me "my bookings" after you sign in and I can read the status.`,
+        chips: ['Show me packages', 'How do I pay?', 'My bookings', 'Talk to an agent'],
       };
 
     case 'payment':
       return {
-        text: `We offer flexible payment options to suit everyone:\n\n🏦 **Bank Transfer** — Invoice emailed within 2 hours\n📱 **EcoCash** — Instant mobile money\n💬 **WhatsApp Payment** — Pay via WhatsApp\n🏢 **Cash / Office** — Visit our Harare office\n💳 **Card** — Secure payment link emailed to you\n💰 **30% Deposit** — Secure your spot, pay the balance 14 days before travel\n\nAll transactions are handled by qualified consultants. We never store card numbers.`,
-        chips: ['Pay 30% deposit', 'EcoCash details', 'Bank details', 'Visit our office'],
+        text: `Pay from [My trips](/dashboard). The amount is in USD.\n\n📱 **EcoCash** — you approve the prompt on your phone\n🏪 **InnBucks** — you get a code and a QR\n📲 **O'mari** — you confirm with the OTP\n💳 **Zimswitch** and **card checkout** — Dischub\n🏦 **Bank transfer** and **cash** — recorded on the booking and confirmed by a consultant\n\nBank transfer and cash do not go through Dischub. I never see your PIN or card number.`,
+        chips: ['My bookings', 'EcoCash', 'InnBucks', 'Talk to an agent'],
       };
 
     case 'cancellation':
       return {
-        text: `We understand plans change. Our policy:\n\n✅ **Free cancellation enquiry** — Contact us any time\n📅 **More than 30 days before travel** — Full refund or free reschedule\n⚠️ **14–30 days before travel** — 50% refund or reschedule fee applies\n❌ **Less than 14 days** — Non-refundable (travel insurance recommended)\n\n💡 We always try to find a solution — call us directly for urgent changes.`,
-        chips: ['Contact us urgently', 'Travel insurance', 'Reschedule my trip', 'Speak to consultant'],
+        text: `Plans change. Email [**${BRAND.email}**](mailto:${BRAND.email}) or WhatsApp [${BRAND.phone}](${BRAND.whatsapp}) with your **TRV** reference.\n\nMore than 30 days before travel, we look at a refund or a free date change. Inside 30 days, airline and hotel rules usually apply. Travel insurance is the safer cover for a late change.`,
+        chips: ['Travel insurance', 'My bookings', 'Talk to an agent'],
       };
 
     case 'visa':
       return {
-        text: `Visa requirements vary by destination and your passport:\n\n🇿🇼 **Zimbabwe passport holders** — Visa on arrival available for many African destinations\n🇿🇦 **South Africa** — Visa-free for SADC nationals\n🇦🇪 **UAE (Dubai)** — Visa required, we can assist\n🇹🇿 **Tanzania/Zanzibar** — Visa on arrival ($50)\n🇲🇻 **Maldives** — Visa on arrival (free)\n\n📋 Our team handles all visa documentation as part of your package. Just ask!`,
-        chips: ['Dubai visa help', 'Zanzibar visa', 'Maldives entry', 'Contact our visa team'],
+        text: `Visa rules depend on your passport and the destination.\n\nWe prepare the paperwork with the package. Zimbabwe passport holders often get visa on arrival in parts of Africa. Dubai usually needs a visa before travel. Zanzibar is visa on arrival. The Maldives is a free visa on arrival.\n\nTell us the passport and the country and the consultant confirms the current rule.`,
+        chips: ['Dubai visa', 'Zanzibar visa', 'Talk to an agent'],
       };
 
     case 'insurance':
       return {
-        text: `We **strongly recommend** travel insurance for all trips. A good policy covers:\n\n🏥 Medical emergencies & evacuation\n✈️ Flight cancellation & delays\n🧳 Lost or stolen luggage\n🏨 Accommodation cancellation\n\n💡 We can arrange comprehensive travel insurance as an add-on to any package. Typical cost: $30–$80 per person depending on destination and duration.`,
-        chips: ['Add insurance to booking', 'Get a quote', 'What does it cover?'],
+        text: `Travel insurance is worth adding. A typical policy covers medical emergencies, cancelled flights, lost luggage and a hotel you can no longer use.\n\nAsk for it on the enquiry and the consultant adds it to the quote. [Contact](/enquiry)`,
+        chips: ['How to book', 'Get a quote', 'Talk to an agent'],
       };
 
     case 'accommodation':
       return {
-        text: `All our packages include carefully selected accommodation:\n\n⭐ **3-Star** — Comfortable hotels with essential amenities\n⭐⭐ **4-Star** — Premium hotels with pools & restaurants\n⭐⭐⭐ **5-Star** — Luxury resorts, overwater villas, private lodges\n\n🏡 We also arrange boutique lodges, beach resorts, and safari camps.\n\nAccommodation is always rated and personally vetted by our team.`,
-        chips: ['Luxury packages', 'Budget options', 'Safari lodges', 'Beach resorts'],
+        text: `Packages name the stay: city hotels, beach resorts and safari lodges. The grade is on the package page.\n\n${packageLines(shownPackages.slice(0, 3))}\n\nOpen a package to see meals and what the stay includes.`,
+        chips: ['Safari packages', 'Beach packages', 'Show me packages'],
       };
 
     case 'contact':
       return {
-        text: `We'd love to hear from you! 📞\n\n📍 **Office:** 1 Kenny Close, Avondale, Harare, Zimbabwe\n📞 **Phone:** +263 77 123 4567\n💬 **WhatsApp:** +263 77 123 4567\n📧 **Email:** enquiries@traverzetravel.co.zw\n\n🕐 **Office Hours:**\nMon–Fri: 08:00–17:00\nSat: 09:00–13:00\n\n💡 For bookings, you can also submit an enquiry online and a consultant will respond within **60 minutes**.`,
-        chips: ['Send an enquiry', 'WhatsApp us', 'Book online', 'Visit office'],
+        text: `**${BRAND.name}**\n\n📍 ${BRAND.address}\n📞 ${BRAND.phone} · office ${BRAND.office}\n💬 [WhatsApp](${BRAND.whatsapp})\n📧 [${BRAND.email}](mailto:${BRAND.email})\n\n🕐 ${BRAND.hours}\n\nLusaka office: Thabo Mbeki Road · +260 954 292 468\n\nOr send an [enquiry](/enquiry). A consultant replies as soon as the office is open.`,
+        chips: ['Send an enquiry', 'My bookings', 'Show me packages'],
       };
 
     case 'account':
       return {
-        text: `Your **Sisonke Travels customer account** lets you:\n\n📋 View all your bookings\n💳 Track payment progress\n💰 Record partial payments\n✅ See booking confirmation status\n📅 Check travel dates\n\n🔐 Your account is **created automatically** when you make your first booking — no registration needed.\n\nLogin at **/account** using the email and password you set during booking.`,
-        chips: ['Go to dashboard', 'Make a booking', 'Forgot password', 'Contact support'],
+        text: `Your account is created when you book, or you can [sign in](/account) with that email.\n\nFrom [My trips](/dashboard) you can see each booking, what is paid, and pay the balance. Once you are signed in, ask me "my bookings".`,
+        chips: ['My bookings', 'How to book', 'How do I pay?'],
       };
 
     case 'honeymoon':
       return {
-        text: `Congratulations! 💍 We specialise in **honeymoon packages** that create memories for a lifetime.\n\n🌊 **Maldives Overwater Villas** — from $4,500 pp\n🌺 **Mauritius Luxury Escape** — from $3,200 pp\n🏝️ **Zanzibar Romantic Retreat** — from $1,850 pp\n🇮🇩 **Bali Island Retreat** — from $2,100 pp\n\n✨ All honeymoon packages include **romantic extras**: sunset cruises, couples spa, champagne welcome, private dining.\n\nTell us your budget and we'll curate the perfect honeymoon.`,
-        chips: ['Maldives honeymoon', 'Mauritius package', 'Zanzibar retreat', 'Custom honeymoon'],
+        text: `Honeymoon trips we arrange often: Maldives, Mauritius, Zanzibar and Bali, with a sunset activity or a private dinner when the resort allows it.\n\nTell me the destination and the budget.${packageLines(packages.slice(0, 3))}`,
+        chips: ['Maldives', 'Zanzibar', 'Mauritius', 'Get a quote'],
       };
 
     case 'group':
       return {
-        text: `We love group travel! 👨‍👩‍👧‍👦 We specialise in:\n\n🎒 **Group Tours** — 6–20 people, shared itinerary\n👪 **Family Packages** — Kid-friendly resorts & activities\n💼 **Corporate Travel** — Incentive trips & team building\n🎓 **School Tours** — Educational African adventures\n\n💰 **Group discounts** available for 6+ people.\n📋 We handle all logistics — flights, accommodation, transfers, activities.\n\nTell us your group size and destination!`,
-        chips: ['Group quote', 'Family packages', 'Corporate travel', 'School tour'],
+        text: `We handle families, groups of friends, school tours and company trips. Six or more people should go through a consultant so the price matches the group.\n\nShare the destination, dates and number of travellers on the [enquiry form](/enquiry).`,
+        chips: ['Family packages', 'Safari packages', 'Get a quote', 'Talk to an agent'],
       };
 
     case 'weekend':
       return {
-        text: `Short on time? Our **Weekend Break** packages are perfect! 🎉\n\n✈️ **Victoria Falls Weekend** — 3 days from $350 pp\n🌊 **Mozambique Beach Escape** — 3 days from $450 pp\n🦁 **Hwange Safari** — 2 nights from $280 pp\n🏙️ **Johannesburg City Break** — 3 days from $320 pp\n\n📅 We can arrange departures **Friday evening** with return **Sunday/Monday** — minimal leave days needed!`,
-        chips: ['Victoria Falls', 'Mozambique', 'Safari weekend', 'Book a weekend break'],
+        text: `Short breaks from Harare are usually Victoria Falls, Mozambique, Hwange or Johannesburg — leave Friday, back Sunday or Monday.${packageLines(packages.length ? packages : shownPackages)}\n\n[All packages](/Holiday_Packages)`,
+        chips: ['Victoria Falls', 'Mozambique', 'Hwange', 'Flight prices'],
       };
 
     case 'safari':
       return {
-        text: `Africa's wildlife is unmatched! 🦁🐘🦒 Our safari destinations:\n\n🌿 **Masai Mara, Kenya** — Great Migration Jul–Oct, $2,400 pp\n🌍 **Chobe, Botswana** — Largest elephant herds, $1,800 pp\n🦏 **Kruger, South Africa** — Big Five, $1,200 pp\n🐆 **Hwange, Zimbabwe** — Uncrowded, authentic, $850 pp\n💦 **Chobe + Victoria Falls** — Ultimate combo, $1,200 pp\n\n🌅 All safaris include expert guides, game drives, and full-board lodges.`,
-        chips: ['Masai Mara safari', 'Zimbabwe safari', 'Safari + beach combo', 'Group safari'],
+        text: `Safari options include Hwange, Chobe, Kruger and the Masai Mara. Lodges and game drives are listed on the package.${packageLines(packages.length ? packages : [])}\n\n${packages.length ? '' : 'Ask for Hwange or a falls-and-safari combination and I will match what is on the site.'}`,
+        chips: ['Hwange', 'Victoria Falls', 'Kenya', 'Get a quote'],
       };
 
     case 'beach':
       return {
-        text: `Sun, sand and crystal water! 🏖️ Our top beach destinations:\n\n🏝️ **Zanzibar** — White sand, turquoise water, from $1,850 pp\n🌊 **Maldives** — Overwater villas, from $4,500 pp\n🌺 **Mauritius** — Lagoon beaches, from $3,200 pp\n🌊 **Mozambique** — Pristine & affordable, from $800 pp\n🇮🇩 **Bali** — Surf & temples, from $2,100 pp\n\n☀️ All beach packages include snorkelling, boat trips, and beach activities.`,
-        chips: ['Zanzibar package', 'Maldives escape', 'Mozambique beach', 'Bali retreat'],
+        text: `Beach trips from here are led by Zanzibar, Mozambique, Mauritius, the Maldives and Bali.${packageLines(packages.length ? packages : [])}`,
+        chips: ['Zanzibar', 'Mozambique', 'Mauritius', 'Maldives'],
       };
 
     case 'besttime':
       return {
-        text: `Great question! Best travel times by destination:\n\n🏝️ **Zanzibar** — Jun–Oct (dry, sunny)\n🦁 **Kenya Safari** — Jul–Oct (Great Migration)\n🇦🇪 **Dubai** — Oct–Apr (cooler, 20–28°C)\n🌊 **Maldives** — Nov–Apr (dry season)\n🌺 **Mauritius** — May–Dec (dry season)\n💦 **Victoria Falls** — Feb–May (full water flow)\n🏔️ **Cape Town** — Oct–Apr (summer)\n\n💡 All year-round departures available from Harare.`,
-        chips: ['Plan a trip', 'See packages', 'Ask about weather', 'Contact us'],
+        text: place
+          ? `${place.emoji} **${place.name}** — ${place.tip || 'We can depart year-round from Harare.'}`
+          : `Usual dry or pleasant seasons:\n\n🏝️ Zanzibar — Jun–Oct\n🦁 Kenya safari — Jul–Oct\n🇦🇪 Dubai — Oct–Apr\n🌊 Maldives — Nov–Apr\n🌺 Mauritius — May–Dec\n💦 Victoria Falls full flow — Feb–May\n🐆 Hwange — Jul–Oct\n\nWe can still depart from Harare outside those months.`,
+        chips: ['Show me packages', 'Zanzibar', 'Victoria Falls', 'Hwange'],
       };
 
     case 'human':
       return {
-        text: `Of course! Our travel consultants are standing by. 🧑‍💼\n\n📞 **Call/WhatsApp:** +263 77 123 4567\n📧 **Email:** enquiries@traverzetravel.co.zw\n💬 **Office Hours:** Mon–Fri 08:00–17:00 · Sat 09:00–13:00\n\nOr submit an online enquiry and a consultant will respond within **60 minutes** — even outside office hours.`,
-        chips: ['Submit enquiry', 'Call now', 'WhatsApp us', 'Visit office'],
+        text: `I can connect you with a consultant.\n\n📞 ${BRAND.phone}\n💬 [WhatsApp](${BRAND.whatsapp})\n📧 [${BRAND.email}](mailto:${BRAND.email})\n🕐 ${BRAND.hours}\n\nOr leave your email in the live-chat form and the office will pick it up.`,
+        chips: ['WhatsApp us', 'Send an enquiry', 'My bookings'],
       };
 
     default: {
-      /* try to extract a location or topic and give a helpful fallback */
-      const pkgs = await getLivePackages(strapi, 2);
-      const pkgHint = pkgs.length > 0
-        ? `\n\nFor example, we currently have **${pkgs[0].title}** available from **$${pkgs[0].cost} pp**.`
-        : '';
+      if (packages.length) {
+        return {
+          text: `This is the closest match on the site.${packageLines(packages)}${flights.length && search.split(' ').some((word) => ['fly', 'flight', 'fare'].includes(word)) ? flightLines(flights) : ''}\n\nOpen a package, or tell me the destination and the month.`,
+          chips: ['How much?', 'How to book', 'Flight prices', 'Talk to an agent'],
+        };
+      }
       return {
-        text: `I'm not sure I fully understood that, but I'd love to help! 🌍\n\nI can assist with:\n• ✈️ Flights & quotes\n• 🏖️ Holiday packages\n• 💳 Booking & payments\n• 🗺️ Destination advice\n• 📋 Account & bookings${pkgHint}\n\nCould you rephrase your question, or choose one of the options below?`,
-        chips: ['Show packages', 'Flight prices', 'How to book', 'Contact agent'],
+        text: `I can help with packages, flight estimates, payments and your own bookings.\n\nTry a destination, or ask "how do I pay?"${user ? ' You are signed in, so "my bookings" works too.' : ' Sign in if you want me to read a booking.'}`,
+        chips: ['Show me packages', 'Flight prices', 'How do I pay?', 'My bookings'],
       };
     }
   }
 }
 
 module.exports = createCoreController('api::ai-chat.ai-chat', ({ strapi }) => ({
-
   async respond(ctx) {
-    const { message, history = [] } = ctx.request.body || {};
+    const body = ctx.request.body || {};
+    const message = typeof body.message === 'string' ? body.message.trim() : '';
+    const history = Array.isArray(body.history) ? body.history.slice(-8) : [];
 
-    if (!message || typeof message !== 'string')
-      return ctx.badRequest('message is required');
-
-    if (message.trim().length > 500)
-      return ctx.badRequest('message too long');
-
-    /* rate limiting — max 30 messages per session (history length check) */
-    if (history.length > 60)
+    if (!message) return ctx.badRequest('message is required');
+    if (message.length > 500) return ctx.badRequest('message too long');
+    if (history.length > 40) {
       return ctx.send({
-        reply: "You've reached the session limit. Please start a new conversation or contact us directly! 😊",
-        chips: ['Contact us', 'Call +263 77 123 4567'],
+        reply: `This chat is full. Start a new one, or email ${BRAND.email}.`,
+        chips: ['Talk to an agent'],
+        intent: 'farewell',
       });
+    }
 
-    const intent  = detectIntent(message);
-    const result  = await buildResponse(intent, message, strapi);
-
-    /* simulate slight processing delay for realism (50-200ms) */
-    await new Promise(r => setTimeout(r, 80 + Math.random() * 120));
+    const user = await signedInUser(strapi, ctx);
+    const name = cleanName(body.name);
+    const choice = pickIntent(norm(message), history);
+    const result = await buildResponse(choice, norm(message), strapi, user, name);
 
     return ctx.send({
-      reply:  result.text,
-      chips:  result.chips || [],
-      intent,
+      reply: result.text,
+      chips: result.chips || [],
+      intent: choice.intent,
+      signedIn: Boolean(user),
     });
   },
 }));
